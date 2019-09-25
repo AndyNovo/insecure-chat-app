@@ -3,7 +3,9 @@
   function add_message($message){
     $dbhandle = new PDO("sqlite:chat.db") or die("Failed to open DB");
     if (!$dbhandle) die ($error);
-    $statement = $dbhandle->prepare("insert into messages ('username','message') values ('".$_SESSION["username"]."','".$message."')");
+    $statement = $dbhandle->prepare("insert into messages ('username','message') values (':session_username',':message')");
+    $statement->bindParam(":session_username", $_SESSION["username"], PDO::PARAM_STR);
+    $statement->bindParam(":message", $message, PDO::PARAM_STR);
     $statement->execute();
   };
   
@@ -11,7 +13,8 @@
     $dbhandle = new PDO("sqlite:chat.db") or die("Failed to open DB");
     if (!$dbhandle) die ($error);
     if ($filter != false){
-      $statement = $dbhandle->prepare("select username, message from messages where message like '%".$filter."%' order by id DESC");
+      $statement = $dbhandle->prepare("select username, message from messages where message like '%:filter%' order by id DESC");
+      $statement->bindParam(":filter", $filter, PDO::PARAM_STR);
     } else {
       $statement = $dbhandle->prepare("select username, message from messages order by id DESC limit 0, 100");
     }
@@ -36,7 +39,9 @@
   function login($username, $pwd){
     $dbhandle = new PDO("sqlite:chat.db") or die("Failed to open DB");
     if (!$dbhandle) die ($error);
-    $statement = $dbhandle->prepare("Select * from users where username='".$username."' and password='".$pwd."'");
+    $statement = $dbhandle->prepare("Select * from users where username = :username and password = :pwd;");
+    $statement->bindParam(":username", $username, PDO::PARAM_STR);
+    $statement->bindParam(":pwd", $pwd, PDO::PARAM_STR);
     $statement->execute();
     $results = $statement->fetch(PDO::FETCH_ASSOC);
     if (isset($results["username"])){
@@ -57,7 +62,10 @@
   function register($username, $pwd){
     $dbhandle = new PDO("sqlite:chat.db") or die("Failed to open DB");
     if (!$dbhandle) die ($error);
-    $statement = $dbhandle->prepare("insert into users values ('".$username."','".$pwd."')");
+    $pwd_hash = hash("sha256", $pwd);
+    $statement = $dbhandle->prepare("insert into users values (':username',':pwd_hash')");
+    $statement->bindParam(":username", $username, PDO::PARAM_STR);
+    $statement->bindParam(":pwd_hash", $pwd_hash, PDO::PARAM_STR);
     $statement->execute();
     $_SESSION["username"] = $username;
     $_SESSION["logged_in"] = "1";
